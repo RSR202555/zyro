@@ -2,6 +2,9 @@ import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "../utils";
 
+const IconX = X as any;
+
+
 export interface DialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,7 +51,7 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, children
             onClick={onClose}
             className="rounded-lg p-1 text-zinc-450 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
           >
-            {React.createElement(X, { size: 18 })}
+            <IconX size={18} />
           </button>
         </div>
         
