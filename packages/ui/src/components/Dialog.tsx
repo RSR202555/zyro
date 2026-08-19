@@ -48,7 +48,7 @@ export const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, children
             onClick={onClose}
             className="rounded-lg p-1 text-zinc-450 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
           >
-            <X size={18} />
+            {React.createElement(X, { size: 18 })}
           </button>
         </div>
         
