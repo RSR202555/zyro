@@ -1,0 +1,34 @@
+{
+  "name": "@zyro/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc && electron .",
+    "package": "node build-config.js && tsc && electron-builder build --win"
+  },
+  "build": {
+    "appId": "com.zyro.desktop",
+    "productName": "Zyro",
+    "electronVersion": "28.2.0",
+    "directories": {
+      "output": "C:/Users/Emerson/AppData/Local/Temp/zyro-dist"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "../../logozyro.png"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "28.2.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "zyro-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zyro - Plataforma Privada de Comunicação",
+  "workspaces": [
+    "packages/shared",
+    "packages/ui",
+    "apps/web",
+    "apps/desktop",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w apps/web",
+    "dev:desktop": "npm run dev -w apps/desktop",
+    "dev:mobile": "npm run start -w apps/mobile",
+    "build": "npm run build --workspaces --if-present",
+    "build:desktop": "npm run package -w apps/desktop",
+    "postinstall": "npm run build -w packages/shared"
+  },
+  "devDependencies": {
+    "@expo/config-plugins": "^57.0.8",
+    "expo": "^57.0.14",
+    "typescript": "^5.3.3"
+  }
+}
