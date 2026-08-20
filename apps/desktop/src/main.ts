@@ -136,7 +136,9 @@ function createWindow() {
 
   mainWindow.loadURL(startUrl);
 
-  mainWindow.webContents.openDevTools();
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 
   // Minimizar para a bandeja ao clicar no fechar
   mainWindow.on("close", (e) => {
