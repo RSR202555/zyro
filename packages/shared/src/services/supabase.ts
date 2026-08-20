@@ -25,7 +25,10 @@ if (isReactNative) {
   }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+const validSupabaseUrl = supabaseUrl || 'https://placeholder.supabase.co';
+const validSupabaseAnonKey = supabaseAnonKey || 'placeholder-anon-key';
+
+export const supabase = createClient(validSupabaseUrl, validSupabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

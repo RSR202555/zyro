@@ -73,47 +73,80 @@ export default function OnboardingPage() {
 
   const handleJoinCommunity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !inviteCode.trim()) return;
+    const cleanCode = inviteCode.trim();
+    if (!profile || !cleanCode) return;
     setError(null);
     setLoading(true);
 
     try {
-      // 1. Buscar convite
-      const { data: invite, error: inviteError } = await supabase
-        .from("invitations")
-        .select("*")
-        .eq("code", inviteCode.trim())
-        .single();
+      let communityId: string | null = null;
 
-      if (inviteError || !invite) {
-        throw new Error("Convite inválido ou expirado.");
-      }
+      // 1. Tentar resgatar o convite via RPC (seguro e atômico)
+      const { data: rpcCommunityId, error: rpcError } = await supabase.rpc(
+        "join_community_by_invite",
+        { p_code: cleanCode }
+      );
 
-      // 2. Inserir membro
-      const { error: memberError } = await supabase
-        .from("community_members")
-        .insert({
-          community_id: invite.community_id,
-          user_id: profile.id,
-        });
+      if (!rpcError && rpcCommunityId) {
+        communityId = rpcCommunityId;
+      } else {
+        // Fallback: Busca manual com ILIKE
+        const { data: invite, error: inviteError } = await supabase
+          .from("invitations")
+          .select("*")
+          .ilike("code", cleanCode)
+          .maybeSingle();
 
-      if (memberError) {
-        if (memberError.code === "23505") {
-          throw new Error("Você já faz parte desta comunidade.");
+        if (inviteError || !invite) {
+          throw new Error("Convite inválido ou expirado.");
         }
-        throw memberError;
-      }
 
-      // 3. Atualizar usos do convite
-      await supabase
-        .from("invitations")
-        .update({ uses: invite.uses + 1 })
-        .eq("id", invite.id);
+        if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+          throw new Error("Este convite já expirou.");
+        }
+
+        if (invite.max_uses && invite.max_uses > 0 && invite.uses >= invite.max_uses) {
+          throw new Error("Este convite atingiu o limite máximo de usos.");
+        }
+
+        // Inserir membro
+        const { error: memberError } = await supabase
+          .from("community_members")
+          .insert({
+            community_id: invite.community_id,
+            user_id: profile.id,
+          });
+
+        if (memberError && memberError.code !== "23505") {
+          throw memberError;
+        }
+
+        // Tentar atualizar usos do convite (não-fatal se RLS restringir)
+        try {
+          await supabase
+            .from("invitations")
+            .update({ uses: invite.uses + 1 })
+            .eq("id", invite.id);
+        } catch (e) {
+          console.warn("Não foi possível atualizar contagem de usos do convite:", e);
+        }
+
+        communityId = invite.community_id;
+      }
 
       await loadCommunities();
-      router.push("/");
+      setShowJoinModal(false);
+      setInviteCode("");
+
+      if (communityId) {
+        router.push(`/channels/${communityId}/default`);
+      } else {
+        router.push("/");
+      }
     } catch (err: any) {
+      console.error("Erro ao entrar na comunidade:", err);
       setError(err.message || "Erro ao entrar na comunidade.");
+    } finally {
       setLoading(false);
     }
   };

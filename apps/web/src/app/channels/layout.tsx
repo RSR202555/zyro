@@ -49,6 +49,7 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
   // Modais e Dropdowns
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const [showCommunityDropdown, setShowCommunityDropdown] = useState(false);
@@ -57,6 +58,8 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelType, setNewChannelType] = useState<'text' | 'voice'>("text");
   const [inviteCode, setInviteCode] = useState("");
+  const [joinInviteCode, setJoinInviteCode] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
   
   // Customização de Perfil e Configurações (Fase 5)
   const [newDisplayName, setNewDisplayName] = useState("");
@@ -274,6 +277,80 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
     }
   };
 
+  const handleJoinCommunity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = joinInviteCode.trim();
+    if (!profile || !cleanCode) return;
+    setJoinError(null);
+    setLoading(true);
+
+    try {
+      let communityId: string | null = null;
+
+      const { data: rpcCommunityId, error: rpcError } = await supabase.rpc(
+        "join_community_by_invite",
+        { p_code: cleanCode }
+      );
+
+      if (!rpcError && rpcCommunityId) {
+        communityId = rpcCommunityId;
+      } else {
+        const { data: invite, error: inviteError } = await supabase
+          .from("invitations")
+          .select("*")
+          .ilike("code", cleanCode)
+          .maybeSingle();
+
+        if (inviteError || !invite) {
+          throw new Error("Convite inválido ou não encontrado.");
+        }
+
+        if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+          throw new Error("Este convite já expirou.");
+        }
+
+        if (invite.max_uses && invite.max_uses > 0 && invite.uses >= invite.max_uses) {
+          throw new Error("Este convite atingiu o limite máximo de usos.");
+        }
+
+        const { error: memberError } = await supabase
+          .from("community_members")
+          .insert({
+            community_id: invite.community_id,
+            user_id: profile.id,
+          });
+
+        if (memberError && memberError.code !== "23505") {
+          throw memberError;
+        }
+
+        try {
+          await supabase
+            .from("invitations")
+            .update({ uses: invite.uses + 1 })
+            .eq("id", invite.id);
+        } catch (e) {
+          console.warn("Não foi possível atualizar convite:", e);
+        }
+
+        communityId = invite.community_id;
+      }
+
+      await loadCommunities();
+      setShowJoinModal(false);
+      setJoinInviteCode("");
+      
+      if (communityId) {
+        router.push(`/channels/${communityId}/default`);
+      }
+    } catch (err: any) {
+      console.error("Erro ao entrar na comunidade:", err);
+      setJoinError(err.message || "Erro ao entrar na comunidade.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGenerateInvite = async () => {
     if (!currentCommunity || !profile) return;
     setLoading(true);
@@ -408,6 +485,14 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
               >
                 <PlusCircle size={14} />
                 <span>Criar Comunidade</span>
+              </div>
+
+              <div 
+                onClick={() => { setShowCommunityDropdown(false); setJoinError(null); setJoinInviteCode(""); setShowJoinModal(true); }}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-amber-400 hover:bg-amber-950/20 cursor-pointer transition-colors"
+              >
+                <Compass size={14} />
+                <span>Entrar com Convite</span>
               </div>
               
               {currentCommunity && (
@@ -618,6 +703,31 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
           <div className="flex justify-end gap-2 mt-2">
             <Button type="button" variant="ghost" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
             <Button type="submit" variant="primary" disabled={loading}>Criar</Button>
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog isOpen={showJoinModal} onClose={() => setShowJoinModal(false)} title="Entrar com Código de Convite">
+        <form onSubmit={handleJoinCommunity} className="flex flex-col gap-4">
+          <p className="text-xs text-zinc-400">
+            Digite ou cole o código de convite para se juntar à comunidade.
+          </p>
+          {joinError && (
+            <div className="rounded-lg bg-red-950/50 border border-red-800 p-2.5 text-xs text-red-400">
+              {joinError}
+            </div>
+          )}
+          <Input
+            label="Código de Convite"
+            placeholder="ex: INV-9812A"
+            value={joinInviteCode}
+            onChange={(e) => setJoinInviteCode(e.target.value)}
+            required
+            disabled={loading}
+          />
+          <div className="flex justify-end gap-2 mt-2 border-t border-zinc-800 pt-3">
+            <Button type="button" variant="ghost" onClick={() => setShowJoinModal(false)} disabled={loading}>Cancelar</Button>
+            <Button type="submit" variant="primary" disabled={loading}>{loading ? "Entrando..." : "Entrar"}</Button>
           </div>
         </form>
       </Dialog>

@@ -87,11 +87,11 @@ export default function ChannelPage() {
 
   // Redirecionamento de canal default para o primeiro canal válido da comunidade
   useEffect(() => {
-    if (channelId === "default" && channels.length > 0) {
+    if (channelId === "default" && channels && channels.length > 0) {
       const textChans = channels.filter((c) => c.type === "text");
       if (textChans.length > 0) {
         router.replace(`/channels/${communityId}/${textChans[0].id}`);
-      } else {
+      } else if (channels[0]?.id) {
         router.replace(`/channels/${communityId}/${channels[0].id}`);
       }
     }
@@ -560,7 +560,7 @@ export default function ChannelPage() {
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="flex flex-col gap-2 mt-1.5">
                         {msg.attachments.map((att: any) => {
-                          const isImage = att.file_type.startsWith("image/");
+                          const isImage = att?.file_type?.startsWith("image/") ?? false;
                           const publicUrl = supabase.storage
                             .from("attachments")
                             .getPublicUrl(att.storage_path).data.publicUrl;
