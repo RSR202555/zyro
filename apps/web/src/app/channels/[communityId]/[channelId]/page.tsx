@@ -49,6 +49,7 @@ export default function ChannelPage() {
   const profile = useAppStore((state) => state.profile);
   const channels = useAppStore((state) => state.channels);
   const currentChannel = useAppStore((state) => state.currentChannel);
+  const currentCommunity = useAppStore((state) => state.currentCommunity);
   const messages = useAppStore((state) => state.messages[channelId] || []);
   const addMessage = useAppStore((state) => state.addMessage);
   const setMessages = useAppStore((state) => state.setMessages);
@@ -654,7 +655,7 @@ export default function ChannelPage() {
                       </button>
                     )}
 
-                    {profile && (msg.user_id === profile.id || currentCommunity.owner_id === profile.id) && (
+                    {profile && (msg.user_id === profile.id || currentCommunity?.owner_id === profile.id) && (
                       <button
                         onClick={() => handleDeleteMessage(msg.id)}
                         className="hover:bg-zinc-800 p-1 text-zinc-400 hover:text-red-400 rounded transition-colors"
