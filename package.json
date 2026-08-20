@@ -16,7 +16,7 @@
     "dev:mobile": "npm run start -w apps/mobile",
     "build": "npm run build --workspaces --if-present",
     "build:desktop": "npm run package -w apps/desktop",
-    "postinstall": "npm run build -w packages/shared"
+    "postinstall": "npm run build -w packages/shared && npm run build -w packages/ui"
   },
   "devDependencies": {
     "@expo/config-plugins": "^57.0.8",
