@@ -1,10 +1,7 @@
 import { app, BrowserWindow, ipcMain, session, desktopCapturer, Menu, Tray, Notification, globalShortcut } from "electron";
 import * as path from "path";
 import * as fs from "fs";
-import * as http from "http";
-import { exec, spawn, ChildProcess } from "child_process";
-
-let localNextServerProcess: ChildProcess | null = null;
+import { exec } from "child_process";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -134,50 +131,17 @@ async function createWindow() {
 
   let targetUrl = process.env.ELECTRON_START_URL;
 
-  if (!targetUrl) {
-    // 1. Verificar se o servidor de desenvolvimento na porta 3000 já está ativo
-    const isDevActive = await new Promise<boolean>((resolve) => {
-      const req = http.get("http://127.0.0.1:3000", () => resolve(true));
-      req.on("error", () => resolve(false));
-      req.setTimeout(500, () => {
-        req.destroy();
-        resolve(false);
-      });
-    });
-
-    if (isDevActive) {
-      targetUrl = "http://127.0.0.1:3000";
-    } else {
-      // 2. Tentar rodar o servidor local de produção na porta 3005
-      const webDir = path.join(__dirname, "../../web");
-      if (fs.existsSync(webDir)) {
-        try {
-          const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
-          localNextServerProcess = spawn(npxCmd, ["next", "start", "-p", "3005"], {
-            cwd: webDir,
-            env: { ...process.env, PORT: "3005" },
-            shell: true,
-          });
-
-          for (let i = 0; i < 15; i++) {
-            await new Promise((r) => setTimeout(r, 400));
-            const isReady = await new Promise<boolean>((resolve) => {
-              const req = http.get("http://127.0.0.1:3005", () => resolve(true));
-              req.on("error", () => resolve(false));
-              req.setTimeout(300, () => {
-                req.destroy();
-                resolve(false);
-              });
-            });
-            if (isReady) {
-              targetUrl = "http://127.0.0.1:3005";
-              break;
-            }
-          }
-        } catch (e) {
-          console.error("Failed to start localNextServerProcess:", e);
+  if (app.isPackaged) {
+    try {
+      const configPath = path.join(__dirname, "config.json");
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        if (config.startUrl) {
+          targetUrl = config.startUrl;
         }
       }
+    } catch (e) {
+      console.error("Failed to read config.json:", e);
     }
   }
 
@@ -262,11 +226,6 @@ app.on("ready", () => {
 });
 
 app.on("will-quit", () => {
-  if (localNextServerProcess) {
-    try {
-      localNextServerProcess.kill();
-    } catch (e) {}
-  }
   globalShortcut.unregisterAll();
 });
 
