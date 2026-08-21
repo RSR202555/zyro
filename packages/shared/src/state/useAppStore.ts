@@ -209,9 +209,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (channels) {
       set({ channels });
       const textChannels = channels.filter((c) => c.type === 'text');
-      if (textChannels.length > 0) {
+      const currentChan = get().currentChannel;
+      const isCurrentChanInCommunity = currentChan && channels.some((c) => c.id === currentChan.id);
+      if (!isCurrentChanInCommunity && textChannels.length > 0) {
         get().setCurrentChannel(textChannels[0]);
       }
+    } else {
+      set({ channels: [] });
     }
   },
 

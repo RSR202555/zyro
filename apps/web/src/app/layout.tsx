@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppInitializer } from "@/components/AppInitializer";
+import "@livekit/components-styles";
 import "./globals.css";
 
 export const metadata: Metadata = {

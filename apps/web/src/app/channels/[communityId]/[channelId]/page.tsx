@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAppStore, supabase } from "@zyro/shared";
 import { Avatar, Button, Input } from "@zyro/ui";
 import dynamic from "next/dynamic";
-import "@livekit/components-styles";
 
 const LiveKitRoom = dynamic(
   () => import("@livekit/components-react").then((mod) => mod.LiveKitRoom),

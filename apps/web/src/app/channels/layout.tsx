@@ -99,13 +99,18 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
   // Sincronizar URL params com o Store
   useEffect(() => {
     const communityId = params.communityId as string;
-    if (communityId && communities.length > 0) {
+    if (communityId && communities && communities.length > 0) {
       const comm = communities.find((c) => c.id === communityId);
-      if (comm && comm.id !== currentCommunity?.id) {
-        setCurrentCommunity(comm);
+      if (comm) {
+        if (comm.id !== currentCommunity?.id) {
+          setCurrentCommunity(comm);
+        }
+      } else if (communities[0]) {
+        setCurrentCommunity(communities[0]);
+        router.replace(`/channels/${communities[0].id}/default`);
       }
     }
-  }, [params.communityId, communities, currentCommunity, setCurrentCommunity]);
+  }, [params.communityId, communities, currentCommunity, setCurrentCommunity, router]);
 
   useEffect(() => {
     const channelId = params.channelId as string;
