@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "npm run build:web",
+  "buildCommand": "npm run build -w @zyro/shared && npm run build -w @zyro/ui && npm run build -w @zyro/web",
   "outputDirectory": "apps/web/.next"
 }
