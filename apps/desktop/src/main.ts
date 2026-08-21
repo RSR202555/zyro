@@ -147,11 +147,18 @@ async function createWindow() {
     });
   }
 
-  // Limpar cache de HTTP do Electron no inicio para sempre buscar o frontend mais recente
-  session.defaultSession.clearCache().catch((err) => console.warn("Cache clear warning:", err));
+  // Limpar cache de HTTP, Service Workers e CacheStorage do Electron no arranque
+  try {
+    await session.defaultSession.clearCache();
+    await session.defaultSession.clearStorageData({
+      storages: ["cookies", "filesystem", "indexdb", "localstorage", "shadercache", "websql", "serviceworkers", "cachestorage"],
+    });
+  } catch (err) {
+    console.warn("Storage clear warning:", err);
+  }
 
   mainWindow.loadURL(targetUrl, {
-    extraHeaders: "pragma: no-cache\nCache-Control: no-cache\n",
+    extraHeaders: "pragma: no-cache\nCache-Control: no-cache, no-store, must-revalidate\n",
   });
 
   if (!app.isPackaged) {
