@@ -60,6 +60,17 @@ function createTray() {
         }
       }
     },
+    {
+      label: "Recarregar e Atualizar App",
+      click: async () => {
+        if (mainWindow) {
+          await session.defaultSession.clearCache();
+          mainWindow.webContents.reloadIgnoringCache();
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      }
+    },
     { type: "separator" },
     {
       label: "Sair",
@@ -117,7 +128,7 @@ function createWindow() {
     });
   });
 
-  let startUrl = process.env.ELECTRON_START_URL || "http://localhost:3000";
+  let startUrl = process.env.ELECTRON_START_URL || "https://zyro8837.vercel.app";
 
   if (app.isPackaged) {
     try {
@@ -134,7 +145,12 @@ function createWindow() {
     }
   }
 
-  mainWindow.loadURL(startUrl);
+  // Limpar cache de HTTP do Electron no inicio para sempre buscar o frontend mais recente
+  session.defaultSession.clearCache().catch((err) => console.warn("Cache clear warning:", err));
+
+  mainWindow.loadURL(startUrl, {
+    extraHeaders: "pragma: no-cache\nCache-Control: no-cache\n",
+  });
 
   if (!app.isPackaged) {
     mainWindow.webContents.openDevTools();
@@ -164,6 +180,21 @@ function createWindow() {
 app.on("ready", () => {
   createWindow();
   createTray();
+
+  // Registrar atalhos globais de recarga de cache
+  globalShortcut.register("CommandOrControl+R", async () => {
+    if (mainWindow) {
+      await session.defaultSession.clearCache();
+      mainWindow.webContents.reloadIgnoringCache();
+    }
+  });
+
+  globalShortcut.register("F5", async () => {
+    if (mainWindow) {
+      await session.defaultSession.clearCache();
+      mainWindow.webContents.reloadIgnoringCache();
+    }
+  });
 
   // Registrar atalhos globais
   globalShortcut.register("CommandOrControl+Alt+M", () => {
