@@ -739,6 +739,17 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
             >
               <Headphones size={15} />
             </button>
+            {typeof window !== "undefined" && (window as any).zyroDesktop && (
+              <button 
+                onClick={() => {
+                  (window as any).zyroDesktop.reloadApp();
+                }}
+                className="p-1.5 rounded-lg hover:bg-indigo-950/50 text-indigo-400 hover:text-indigo-200 transition-colors"
+                title="Buscar Atualizações e Limpar Cache"
+              >
+                <RefreshCw size={15} />
+              </button>
+            )}
             <button 
               onClick={handleLogout}
               className="p-1.5 rounded-lg hover:bg-red-950/20 text-zinc-500 hover:text-red-400 transition-colors"

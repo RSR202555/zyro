@@ -246,3 +246,18 @@ ipcMain.handle("get-env", () => {
     platform: process.platform,
   };
 });
+
+ipcMain.handle("reload-app", async () => {
+  if (mainWindow) {
+    try {
+      await session.defaultSession.clearCache();
+      await session.defaultSession.clearStorageData({
+        storages: ["cookies", "filesystem", "indexdb", "localstorage", "shadercache", "websql", "serviceworkers", "cachestorage"],
+      });
+    } catch (e) {
+      console.warn("Reload app clear cache error:", e);
+    }
+    mainWindow.webContents.reloadIgnoringCache();
+  }
+  return true;
+});
