@@ -27,7 +27,12 @@ export default function LoginPage() {
       setError(signInError.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : signInError.message);
       setLoading(false);
     } else {
-      router.push("/");
+      const pendingInvite = typeof window !== "undefined" ? localStorage.getItem("zyro_pending_invite") : null;
+      if (pendingInvite) {
+        router.push(`/invite/${pendingInvite}`);
+      } else {
+        router.push("/");
+      }
     }
   };
 

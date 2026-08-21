@@ -60,6 +60,7 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
   const [inviteCode, setInviteCode] = useState("");
   const [joinInviteCode, setJoinInviteCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   
   // Customização de Perfil e Configurações (Fase 5)
   const [newDisplayName, setNewDisplayName] = useState("");
@@ -737,24 +738,47 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
         </form>
       </Dialog>
 
-      <Dialog isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} title="Convidar para a Comunidade">
+      <Dialog isOpen={showInviteModal} onClose={() => { setShowInviteModal(false); setCopied(false); }} title="Convidar para a Comunidade">
         <div className="flex flex-col gap-4">
           <p className="text-xs text-zinc-400">
-            Gere um código de convite único que seus amigos possam usar no onboarding para entrar na comunidade.
+            Gere um link ou código de convite para enviar aos seus amigos. Quem clicar no link entrará diretamente nesta comunidade!
           </p>
           {inviteCode ? (
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold text-zinc-500 uppercase">Código Gerado:</span>
-              <div className="flex items-center gap-2 p-3 bg-zinc-950 border border-zinc-800 rounded-lg select-all text-center justify-center font-mono text-lg font-bold text-indigo-400 tracking-wider">
-                {inviteCode}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Link de Convite Direto:</span>
+                <div className="flex items-center gap-2 p-2 bg-zinc-950 border border-zinc-800 rounded-lg">
+                  <input
+                    type="text"
+                    readOnly
+                    value={typeof window !== "undefined" ? `${window.location.origin}/invite/${inviteCode}` : `/invite/${inviteCode}`}
+                    className="flex-1 bg-transparent border-0 outline-none text-xs text-indigo-400 font-mono font-medium truncate"
+                  />
+                  <Button
+                    size="sm"
+                    variant={copied ? "secondary" : "primary"}
+                    onClick={() => {
+                      const link = typeof window !== "undefined" ? `${window.location.origin}/invite/${inviteCode}` : `/invite/${inviteCode}`;
+                      navigator.clipboard.writeText(link);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2500);
+                    }}
+                  >
+                    {copied ? "✓ Copiado!" : "Copiar Link"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between px-1 text-[11px] text-zinc-500">
+                <span>Código Manual: <strong className="font-mono text-zinc-300">{inviteCode}</strong></span>
               </div>
             </div>
           ) : (
-            <Button onClick={handleGenerateInvite} variant="primary" className="w-full" disabled={loading}>
-              Gerar Código de Convite
+            <Button onClick={() => { setCopied(false); handleGenerateInvite(); }} variant="primary" className="w-full" disabled={loading}>
+              {loading ? "Gerando..." : "Gerar Link de Convite"}
             </Button>
           )}
-          <div className="flex justify-end mt-2">
+          <div className="flex justify-end mt-2 border-t border-zinc-800 pt-3">
             <Button variant="ghost" onClick={() => setShowInviteModal(false)}>Concluído</Button>
           </div>
         </div>
