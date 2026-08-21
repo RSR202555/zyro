@@ -92,7 +92,7 @@ function createTray() {
   });
 }
 
-function createWindow() {
+async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -128,27 +128,29 @@ function createWindow() {
     });
   });
 
-  let startUrl = process.env.ELECTRON_START_URL || "https://zyro8837.vercel.app";
+  const http = require("http");
+  const checkUrl = process.env.ELECTRON_START_URL;
+  let targetUrl = checkUrl || "https://zyro8837.vercel.app";
 
-  if (app.isPackaged) {
-    try {
-      const fs = require("fs");
-      const configPath = path.join(__dirname, "config.json");
-      if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        if (config.startUrl) {
-          startUrl = config.startUrl;
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load config.json:", e);
-    }
+  if (!checkUrl) {
+    targetUrl = await new Promise<string>((resolve) => {
+      const req = http.get("http://localhost:3000", (res: any) => {
+        resolve("http://localhost:3000");
+      });
+      req.on("error", () => {
+        resolve("https://zyro8837.vercel.app");
+      });
+      req.setTimeout(800, () => {
+        req.destroy();
+        resolve("https://zyro8837.vercel.app");
+      });
+    });
   }
 
   // Limpar cache de HTTP do Electron no inicio para sempre buscar o frontend mais recente
   session.defaultSession.clearCache().catch((err) => console.warn("Cache clear warning:", err));
 
-  mainWindow.loadURL(startUrl, {
+  mainWindow.loadURL(targetUrl, {
     extraHeaders: "pragma: no-cache\nCache-Control: no-cache\n",
   });
 
