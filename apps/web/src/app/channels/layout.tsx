@@ -360,21 +360,66 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
   const handleGenerateInvite = async () => {
     if (!currentCommunity || !profile) return;
     setLoading(true);
-    const code = `INV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     try {
-      const { error } = await supabase.from("invitations").insert({
-        community_id: currentCommunity.id,
-        code,
-        created_by: profile.id,
+      // 1. Tentar gerar convite via RPC com SECURITY DEFINER (funciona para donos e membros)
+      const { data: rpcCode, error: rpcErr } = await supabase.rpc("create_community_invite", {
+        p_community_id: currentCommunity.id,
       });
 
-      if (error) throw error;
-      setInviteCode(code);
-    } catch (err) {
-      console.error(err);
+      if (!rpcErr && rpcCode) {
+        setInviteCode(rpcCode);
+      } else {
+        // Fallback manual de inserção
+        const code = `INV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const { error } = await supabase.from("invitations").insert({
+          community_id: currentCommunity.id,
+          code,
+          created_by: profile.id,
+        });
+
+        if (error) throw error;
+        setInviteCode(code);
+      }
+    } catch (err: any) {
+      console.error("Erro ao gerar convite:", err);
+      alert("Erro ao gerar convite: " + (err.message || "Falha de permissão."));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyInviteLink = (code: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://zyro8837.vercel.app";
+    const fullLink = `${baseUrl}/invite/${code}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fullLink).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }).catch(() => {
+        fallbackCopyText(fullLink);
+      });
+    } else {
+      fallbackCopyText(fullLink);
+    }
+  };
+
+  const fallbackCopyText = (text: string) => {
+    try {
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.style.position = "fixed";
+      input.style.left = "-999999px";
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      console.error("Erro ao copiar via fallback:", e);
     }
   };
 
@@ -767,18 +812,13 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
                   <input
                     type="text"
                     readOnly
-                    value={typeof window !== "undefined" ? `${window.location.origin}/invite/${inviteCode}` : `/invite/${inviteCode}`}
+                    value={`${process.env.NEXT_PUBLIC_APP_URL || "https://zyro8837.vercel.app"}/invite/${inviteCode}`}
                     className="flex-1 bg-transparent border-0 outline-none text-xs text-indigo-400 font-mono font-medium truncate"
                   />
                   <Button
                     size="sm"
                     variant={copied ? "secondary" : "primary"}
-                    onClick={() => {
-                      const link = typeof window !== "undefined" ? `${window.location.origin}/invite/${inviteCode}` : `/invite/${inviteCode}`;
-                      navigator.clipboard.writeText(link);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2500);
-                    }}
+                    onClick={() => handleCopyInviteLink(inviteCode)}
                   >
                     {copied ? "✓ Copiado!" : "Copiar Link"}
                   </Button>
