@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npm run build -w @zyro/shared && npm run build -w @zyro/ui",
+    "prebuild": "tsc --project ../../packages/shared/tsconfig.json && tsc --project ../../packages/ui/tsconfig.json",
     "build": "next build",
     "start": "next start"
   },
