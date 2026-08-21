@@ -14,7 +14,7 @@
     "dev:web": "npm run dev -w apps/web",
     "dev:desktop": "npm run dev -w apps/desktop",
     "dev:mobile": "npm run start -w apps/mobile",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @zyro/shared && npm run build -w @zyro/ui && npm run build -w @zyro/web",
     "build:web": "npm run build -w apps/web",
     "build:desktop": "npm run package -w apps/desktop",
     "postinstall": "npm run build -w packages/shared && npm run build -w packages/ui"
