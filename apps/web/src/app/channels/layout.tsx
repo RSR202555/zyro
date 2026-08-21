@@ -597,32 +597,48 @@ export default function ChannelsLayout({ children }: { children: React.ReactNode
                 .map((chan) => {
                   const isActive = currentChannel?.id === chan.id;
                   return (
-                    <div
-                      key={chan.id}
-                      onClick={() => router.push(`/channels/${currentCommunity.id}/${chan.id}`)}
-                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer group transition-all duration-150 ${
-                        isActive 
-                          ? "bg-zinc-800/80 text-indigo-400 font-semibold border-l-2 border-indigo-500 pl-2" 
-                          : "text-zinc-400 hover:bg-zinc-850 hover:text-zinc-200"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Volume2 size={14} className={isActive ? "text-indigo-400" : "text-zinc-500"} />
-                        <span className="truncate">{chan.name}</span>
+                    <div key={chan.id} className="flex flex-col gap-0.5">
+                      <div
+                        onClick={() => router.push(`/channels/${currentCommunity.id}/${chan.id}`)}
+                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer group transition-all duration-150 ${
+                          isActive 
+                            ? "bg-emerald-950/40 text-emerald-400 font-semibold border-l-2 border-emerald-500 pl-2" 
+                            : "text-zinc-400 hover:bg-zinc-850 hover:text-zinc-200"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Volume2 size={14} className={isActive ? "text-emerald-400 animate-pulse" : "text-zinc-500"} />
+                          <span className="truncate">{chan.name}</span>
+                        </div>
+                        {currentCommunity.owner_id === profile.id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Deseja mesmo excluir o canal ${chan.name}?`)) {
+                                deleteChannel(chan.id);
+                              }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 p-0.5 rounded transition-opacity"
+                            title="Excluir Canal"
+                          >
+                            <Trash size={12} />
+                          </button>
+                        )}
                       </div>
-                      {currentCommunity.owner_id === profile.id && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Deseja mesmo excluir o canal ${chan.name}?`)) {
-                              deleteChannel(chan.id);
-                            }
-                          }}
-                          className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 p-0.5 rounded transition-opacity"
-                          title="Excluir Canal"
-                        >
-                          <Trash size={12} />
-                        </button>
+
+                      {/* Membros Conectados no Canal de Voz (Estilo Discord) */}
+                      {isActive && (
+                        <div className="flex flex-col gap-1 ml-5 my-0.5 border-l-2 border-emerald-500/30 pl-2.5 py-0.5">
+                          <div className="flex items-center gap-2 py-0.5 text-xs">
+                            <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-emerald-650 text-white font-extrabold text-[10px] ring-2 ring-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                              {(profile.display_name || profile.username).substring(0, 1).toUpperCase()}
+                              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-zinc-900 animate-ping" />
+                            </div>
+                            <span className="truncate text-xs font-semibold text-emerald-300">
+                              {profile.display_name || profile.username}
+                            </span>
+                          </div>
+                        </div>
                       )}
                     </div>
                   );

@@ -21,10 +21,17 @@ const RoomAudioRenderer = dynamic(
   { ssr: false }
 );
 import { 
+  useParticipants,
+  useIsSpeaking,
+  useLocalParticipant,
+} from "@livekit/components-react";
+
+import { 
   Send, 
   Hash, 
   Volume2, 
   Video, 
+  VideoOff,
   Monitor, 
   PhoneOff, 
   Plus, 
@@ -40,6 +47,151 @@ import {
   FileText,
   X
 } from "lucide-react";
+
+function DiscordVoiceTile({ participant }: { participant: any }) {
+  const isSpeaking = useIsSpeaking({ participant });
+  const isMicEnabled = participant.isMicrophoneEnabled;
+  const name = participant.name || participant.identity || "Membro";
+
+  return (
+    <div
+      className={`relative flex flex-col items-center justify-center p-6 rounded-2xl bg-zinc-900/90 border transition-all duration-200 overflow-hidden shadow-xl ${
+        isSpeaking
+          ? "border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.5)] ring-2 ring-emerald-500/60 scale-[1.02]"
+          : "border-zinc-800/80 hover:border-zinc-700"
+      }`}
+      style={{ aspectRatio: "16/9", minHeight: "180px" }}
+    >
+      {/* Indicador de Fala (Bandeira no Topo) */}
+      {isSpeaking && (
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-[11px] font-bold text-emerald-400 backdrop-blur-md animate-pulse">
+          <Volume2 size={13} className="animate-bounce" />
+          <span>Falando</span>
+        </div>
+      )}
+
+      {/* Indicador de Mudo */}
+      {!isMicEnabled && (
+        <div className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-red-950/80 border border-red-800 text-red-400 backdrop-blur-md" title="Microfone Mutado">
+          <MicOff size={14} />
+        </div>
+      )}
+
+      {/* Visual do Participante */}
+      <div className="flex flex-col items-center justify-center gap-3">
+        <div
+          className={`relative flex items-center justify-center w-20 h-20 rounded-full font-extrabold text-2xl transition-all duration-200 ${
+            isSpeaking
+              ? "bg-emerald-650 text-white ring-4 ring-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.8)] scale-105"
+              : "bg-indigo-650 text-white border-2 border-zinc-700 shadow-md"
+          }`}
+        >
+          {name.substring(0, 2).toUpperCase()}
+        </div>
+        <span className={`text-sm font-bold truncate max-w-[160px] ${isSpeaking ? "text-emerald-300 font-extrabold" : "text-zinc-200"}`}>
+          {name}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DiscordVoiceControls({ onDisconnect }: { onDisconnect: () => void }) {
+  const { localParticipant } = useLocalParticipant();
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [camEnabled, setCamEnabled] = useState(false);
+  const [screenSharing, setScreenSharing] = useState(false);
+
+  const toggleMic = async () => {
+    if (localParticipant) {
+      const next = !micEnabled;
+      await localParticipant.setMicrophoneEnabled(next);
+      setMicEnabled(next);
+    }
+  };
+
+  const toggleCam = async () => {
+    if (localParticipant) {
+      const next = !camEnabled;
+      await localParticipant.setCameraEnabled(next);
+      setCamEnabled(next);
+    }
+  };
+
+  const toggleScreen = async () => {
+    if (localParticipant) {
+      const next = !screenSharing;
+      await localParticipant.setScreenShareEnabled(next);
+      setScreenSharing(next);
+    }
+  };
+
+  return (
+    <div className="h-16 bg-zinc-900/90 border-t border-zinc-800 px-6 flex items-center justify-center gap-4 select-none backdrop-blur-md">
+      <button
+        onClick={toggleMic}
+        className={`flex items-center justify-center w-11 h-11 rounded-full transition-all ${
+          micEnabled
+            ? "bg-zinc-800 hover:bg-zinc-750 text-zinc-200 border border-zinc-700"
+            : "bg-red-950/80 border border-red-800 text-red-400 hover:bg-red-900"
+        }`}
+        title={micEnabled ? "Mutar Microfone" : "Desmutar Microfone"}
+      >
+        {micEnabled ? <Mic size={18} /> : <MicOff size={18} />}
+      </button>
+
+      <button
+        onClick={toggleCam}
+        className={`flex items-center justify-center w-11 h-11 rounded-full transition-all ${
+          camEnabled
+            ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg"
+            : "bg-zinc-800 hover:bg-zinc-750 text-zinc-200 border border-zinc-700"
+        }`}
+        title={camEnabled ? "Desativar Câmera" : "Ativar Câmera"}
+      >
+        {camEnabled ? <Video size={18} /> : <VideoOff size={18} />}
+      </button>
+
+      <button
+        onClick={toggleScreen}
+        className={`flex items-center justify-center w-11 h-11 rounded-full transition-all ${
+          screenSharing
+            ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg"
+            : "bg-zinc-800 hover:bg-zinc-750 text-zinc-200 border border-zinc-700"
+        }`}
+        title={screenSharing ? "Parar Compartilhamento" : "Compartilhar Tela"}
+      >
+        <Monitor size={18} />
+      </button>
+
+      <div className="w-[1px] h-6 bg-zinc-800 mx-2" />
+
+      <button
+        onClick={onDisconnect}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-lg hover:shadow-red-600/30"
+        title="Desconectar da Chamada"
+      >
+        <PhoneOff size={16} />
+        <span>Desconectar</span>
+      </button>
+    </div>
+  );
+}
+
+function DiscordVoiceGrid({ onDisconnect }: { onDisconnect: () => void }) {
+  const participants = useParticipants();
+
+  return (
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-950">
+      <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-center justify-center">
+        {participants.map((p) => (
+          <DiscordVoiceTile key={p.sid || p.identity} participant={p} />
+        ))}
+      </div>
+      <DiscordVoiceControls onDisconnect={onDisconnect} />
+    </div>
+  );
+}
 
 export default function ChannelPage() {
   const router = useRouter();
@@ -391,19 +543,26 @@ export default function ChannelPage() {
     );
   }
 
-  // RENDER CANAL DE VOZ
+  // Autoconectar ao canal de voz assim que o usuário entra na pagina
+  useEffect(() => {
+    if (currentChannel?.type === "voice" && !inCall && !liveKitToken && !loading && profile) {
+      handleConnectVoice();
+    }
+  }, [currentChannel?.id, currentChannel?.type, inCall, liveKitToken, loading, profile]);
+
+  // RENDER CANAL DE VOZ (ESTILO DISCORD COM INDICADORES DE FALA EM TEMPO REAL)
   if (currentChannel.type === "voice") {
     return (
       <div className="flex-1 flex flex-col h-full bg-zinc-950">
         {/* Topbar */}
-        <div className="flex items-center h-12 px-4 border-b border-zinc-900 bg-zinc-900 justify-between text-zinc-250 select-none" style={{ WebkitAppRegion: "drag" } as any}>
-          <div className="flex items-center gap-2 font-bold text-sm text-zinc-200" style={{ WebkitAppRegion: "no-drag" } as any}>
-            <Volume2 size={18} className="text-zinc-450" />
+        <div className="flex items-center h-12 px-4 border-b border-zinc-900 bg-zinc-900 justify-between text-zinc-250 select-none">
+          <div className="flex items-center gap-2 font-bold text-sm text-zinc-200">
+            <Volume2 size={18} className="text-emerald-400" />
             <span>{currentChannel.name}</span>
           </div>
-          <div className="flex items-center gap-2 text-xs bg-zinc-950/60 border border-zinc-800/80 px-2.5 py-1 rounded-md text-emerald-500 font-semibold" style={{ WebkitAppRegion: "no-drag" } as any}>
-            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-            LiveKit Ativo
+          <div className="flex items-center gap-2 text-xs bg-emerald-950/40 border border-emerald-800/60 px-3 py-1 rounded-full text-emerald-400 font-semibold shadow-sm">
+            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
+            Voz em Tempo Real
           </div>
         </div>
 
@@ -426,23 +585,24 @@ export default function ChannelPage() {
                 setLiveKitToken(null);
               }}
             >
-              <div className="flex-1 min-h-0 overflow-y-auto p-4">
-                <VideoConference />
-              </div>
+              <DiscordVoiceGrid onDisconnect={() => {
+                setInCall(false);
+                setLiveKitToken(null);
+              }} />
               <RoomAudioRenderer />
             </LiveKitRoom>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4 text-center max-w-sm mx-auto">
-              <Volume2 size={48} className="text-zinc-700 animate-pulse" />
+              <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-950/60 border border-emerald-800 text-emerald-400 shadow-xl">
+                <Volume2 size={36} className="animate-pulse" />
+              </div>
               <div className="flex flex-col gap-1">
-                <h3 className="text-lg font-bold text-zinc-200">Canal de Voz</h3>
-                <p className="text-xs text-zinc-550 leading-relaxed">
-                  Conecte-se para conversar por voz, compartilhar câmera ou transmitir sua tela em tempo real com segurança.
+                <h3 className="text-lg font-bold text-zinc-200">Conectando ao Canal de Voz...</h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Estabelecendo conexão privada em tempo real.
                 </p>
               </div>
-              <Button onClick={handleConnectVoice} variant="primary" className="mt-2 w-full" disabled={loading}>
-                {loading ? "Conectando..." : "Conectar ao Canal de Voz"}
-              </Button>
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent mt-2" />
             </div>
           )}
         </div>
