@@ -1,6 +1,10 @@
 import { app, BrowserWindow, ipcMain, session, desktopCapturer, Menu, Tray, Notification, globalShortcut } from "electron";
 import * as path from "path";
-import { exec } from "child_process";
+import * as fs from "fs";
+import * as http from "http";
+import { exec, spawn, ChildProcess } from "child_process";
+
+let localNextServerProcess: ChildProcess | null = null;
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -128,23 +132,57 @@ async function createWindow() {
     });
   });
 
-  const http = require("http");
-  const checkUrl = process.env.ELECTRON_START_URL;
-  let targetUrl = checkUrl || "https://zyro8837.vercel.app";
+  let targetUrl = process.env.ELECTRON_START_URL;
 
-  if (!checkUrl) {
-    targetUrl = await new Promise<string>((resolve) => {
-      const req = http.get("http://localhost:3000", (res: any) => {
-        resolve("http://localhost:3000");
-      });
-      req.on("error", () => {
-        resolve("https://zyro8837.vercel.app");
-      });
-      req.setTimeout(800, () => {
+  if (!targetUrl) {
+    // 1. Verificar se o servidor de desenvolvimento na porta 3000 já está ativo
+    const isDevActive = await new Promise<boolean>((resolve) => {
+      const req = http.get("http://127.0.0.1:3000", () => resolve(true));
+      req.on("error", () => resolve(false));
+      req.setTimeout(500, () => {
         req.destroy();
-        resolve("https://zyro8837.vercel.app");
+        resolve(false);
       });
     });
+
+    if (isDevActive) {
+      targetUrl = "http://127.0.0.1:3000";
+    } else {
+      // 2. Tentar rodar o servidor local de produção na porta 3005
+      const webDir = path.join(__dirname, "../../web");
+      if (fs.existsSync(webDir)) {
+        try {
+          const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
+          localNextServerProcess = spawn(npxCmd, ["next", "start", "-p", "3005"], {
+            cwd: webDir,
+            env: { ...process.env, PORT: "3005" },
+            shell: true,
+          });
+
+          for (let i = 0; i < 15; i++) {
+            await new Promise((r) => setTimeout(r, 400));
+            const isReady = await new Promise<boolean>((resolve) => {
+              const req = http.get("http://127.0.0.1:3005", () => resolve(true));
+              req.on("error", () => resolve(false));
+              req.setTimeout(300, () => {
+                req.destroy();
+                resolve(false);
+              });
+            });
+            if (isReady) {
+              targetUrl = "http://127.0.0.1:3005";
+              break;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to start localNextServerProcess:", e);
+        }
+      }
+    }
+  }
+
+  if (!targetUrl) {
+    targetUrl = "https://zyro8837.vercel.app";
   }
 
   // Limpar cache de HTTP, Service Workers e CacheStorage do Electron no arranque
@@ -224,6 +262,11 @@ app.on("ready", () => {
 });
 
 app.on("will-quit", () => {
+  if (localNextServerProcess) {
+    try {
+      localNextServerProcess.kill();
+    } catch (e) {}
+  }
   globalShortcut.unregisterAll();
 });
 
