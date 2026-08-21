@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-let startUrl = 'https://zyro8837.vercel.app';
+let startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
 
 try {
   const envPath = path.join(__dirname, '../../.env');
