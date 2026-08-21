@@ -13,7 +13,7 @@
     "productName": "Zyro",
     "electronVersion": "28.2.0",
     "directories": {
-      "output": "C:/Users/Emerson/AppData/Local/Temp/zyro-dist"
+      "output": "dist-installer"
     },
     "files": [
       "dist/**/*",
@@ -22,8 +22,10 @@
     ],
     "win": {
       "target": [
-        "nsis"
-      ]
+        "dir"
+      ],
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
     }
   },
   "devDependencies": {

@@ -107,8 +107,8 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
 
   // Habilitar compartilhamento de tela nativo no Electron
-  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    desktopCapturer.getSources({ types: ["screen", "window"] }).then((sources) => {
+  session.defaultSession.setDisplayMediaRequestHandler((request: any, callback: any) => {
+    desktopCapturer.getSources({ types: ["screen", "window"] }).then((sources: any) => {
       if (sources.length > 0) {
         callback({ video: sources[0] });
       } else {
@@ -141,7 +141,7 @@ function createWindow() {
   }
 
   // Minimizar para a bandeja ao clicar no fechar
-  mainWindow.on("close", (e) => {
+  mainWindow.on("close", (e: any) => {
     if (!(app as any).isQuitting) {
       e.preventDefault();
       mainWindow?.hide();

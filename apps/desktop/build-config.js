@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-let startUrl = 'http://localhost:3000';
+let startUrl = 'https://zyro8837.vercel.app';
 
 try {
   const envPath = path.join(__dirname, '../../.env');

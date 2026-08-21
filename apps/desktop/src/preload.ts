@@ -10,6 +10,6 @@ contextBridge.exposeInMainWorld("zyroDesktop", {
     ipcRenderer.on("global-shortcut-toggle-deafen", () => callback());
   },
   onGameDetected: (callback: (gameName: string) => void) => {
-    ipcRenderer.on("game-detected", (_, gameName) => callback(gameName));
+    ipcRenderer.on("game-detected", (_: any, gameName: any) => callback(gameName));
   },
 });
